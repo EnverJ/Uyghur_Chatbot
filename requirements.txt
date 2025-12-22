@@ -1,1 +1,4 @@
 # No external libraries needed for v0.1
+Flask
+scikit-learn
+watchdog

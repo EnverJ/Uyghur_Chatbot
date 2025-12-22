@@ -1,0 +1,234 @@
+┌─────────────┐
+│  User input │
+│ "سالام"     │
+└─────┬───────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ TF-IDF Vectorizer        │
+│ Converts text into       │
+│ numerical feature vector │
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ LinearSVC Classifier     │
+│ Predicts the intent      │
+│ based on training data   │
+│ e.g., "greeting"         │
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ Responses Dictionary     │
+│ Look up the intent key   │
+│ e.g., RESPONSES["greeting"] │
+│ Returns a list of replies│
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ Random Response Selector │
+│ Picks one reply from list│
+│ e.g., "ياخشىمۇسىز! 😊"   │
+└─────┬──────────────────┘
+      │
+      ▼
+┌─────────────┐
+│ Bot Output  │
+│ 🤖: ياخشىمۇسىز! 😊 │
+└─────────────┘
+
+
+
+Step-by-step explanation
+	1.	User input: The raw Uyghur text entered by the user.
+	2.	Vectorization: The text is converted into numbers that the ML model can understand.
+	3.	Intent prediction: LinearSVC predicts which intent the input belongs to (like "greeting").
+	4.	Response lookup: The chatbot checks RESPONSES for the predicted intent.
+	5.	Random response selection: If there are multiple responses, one is chosen randomly.
+	6.	Bot output: The chatbot prints the response to the user.
+
+-- flow of fallback response
+┌─────────────┐
+│  User input │
+│  e.g., "بۇنى چۈشەنمەيمەن" │
+└─────┬───────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ TF-IDF Vectorizer        │
+│ Converts text into       │
+│ numerical feature vector │
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ LinearSVC Classifier     │
+│ Predicts the intent      │
+│ e.g., "unknown"          │
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ Responses Dictionary     │
+│ Look up predicted intent │
+│ If intent not found,     │
+│ use "fallback" key       │
+└─────┬──────────────────┘
+      │
+      ▼
+┌──────────────────────────┐
+│ Random Response Selector │
+│ Picks one reply from list│
+│ e.g., "چۈشەنمىدىم، قايتا ئېيتىپ بېرىڭ." │
+└─────┬──────────────────┘
+      │
+      ▼
+┌─────────────┐
+│ Bot Output  │
+│ 🤖: چۈشەنمىدىم، قايتا ئېيتىپ بېرىڭ. │
+└─────────────┘
+
+Key points about fallback handling
+	1.	If the user input matches no known intent, the ML classifier might return an unexpected label or a low-confidence prediction.
+	2.	The code uses:
+	response_list = RESPONSES.get(intent, RESPONSES["fallback"])
+		•	RESPONSES.get(intent) → normal response if intent exists
+	•	RESPONSES["fallback"] → used if the intent is unknown
+
+	3.	This ensures the bot always replies, even if it doesn’t understand the input.
+
+
+-- data flow for training the model
+                ┌───────────────────────────┐
+                │     data/intents/         │
+                │ JSON files per intent      │
+                │ e.g., greeting.json        │
+                │ { "intent": "greeting",  │
+                │   "utterances": [...] }   │
+                └───────────┬──────────────┘
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │ load_training_data()│
+                 │ Reads JSON and      │
+                 │ returns (text, label) pairs
+                 └───────────┬─────────┘
+                             │
+                             ▼
+                     ┌───────────────┐
+                     │ IntentClassifier│
+                     │   ML Model      │
+                     │ LinearSVC + TF-IDF
+                     └─────┬─────────┘
+                           │
+               ┌───────────┴───────────┐
+               │                       │
+               ▼                       ▼
+      User Input (e.g., "سالام")  -----> Transform to TF-IDF vector
+                           │
+                           ▼
+                    Predict intent
+                           │
+                           ▼
+               ┌───────────────────────────┐
+               │   data/responses/         │
+               │ JSON files per intent     │
+               │ e.g., greeting.json       │
+               │ { "intent": "greeting",  │
+               │   "responses": [...] }    │
+               └───────────┬──────────────┘
+                           │
+                           ▼
+               RESPONSES dictionary (loaded)
+                           │
+                           ▼
+        Match predicted intent to response list
+            ┌───────────────┐
+            │ Known intent  │ -> pick random response
+            │ "greeting"    │ -> e.g., "ياخشىمۇسىز! 😊"
+            └───────────────┘
+            │
+            │
+            │ Unknown / unmatched intent
+            ▼
+      Fallback response -> "چۈشەنمىدىم، قايتا ئېيتىپ بېرىڭ."
+                           │
+                           ▼
+                      Bot Output
+                  🤖: Yaхshi-mu-siz! 😊
+-- data flow explanation
+Explanation
+	1.	Training pipeline
+	•	JSON files in data/intents/ → load_training_data() → ML classifier (LinearSVC)
+	2.	Response pipeline
+	•	JSON files in data/responses/ → load_responses() → dictionary mapping intent → responses
+	3.	User interaction
+	•	Input is vectorized → classifier predicts intent → response dictionary is used → random response picked
+	4.	Fallback
+	•	If input does not match any intent, fallback responses are used
+
+⸻
+
+This shows exactly how the data flows from JSON files → ML model → predicted intent → chatbot response.
+
+-- Architectural overview
+                ┌───────────────────────┐
+                │     data/intents/      │
+                │ JSON files per intent  │
+                │ (utterances)           │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │ load_training_data()  │
+                │ Prepares text/label   │
+                │ pairs for ML model    │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │  IntentClassifier     │
+                │ (LinearSVC + TF-IDF) │
+                │ Predicts intent       │
+                └──────────┬────────────┘
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+             ▼                           ▼
+      User Input                     Unknown Input
+     (e.g., "سالام")                 (unrecognized)
+             │                           │
+             ▼                           ▼
+      TF-IDF Vectorizer            Fallback Response
+             │                           │
+             ▼                           │
+      Predicted Intent ------------------┘
+             │
+             ▼
+      ┌───────────────────────┐
+      │ data/responses/       │
+      │ JSON files per intent │
+      │ (responses)           │
+      └──────────┬────────────┘
+                 │
+                 ▼
+        Select random response
+                 │
+                 ▼
+              Bot Output
+          🤖: ياخشىمۇسىز! 😊 or fallback message
+
+Explanation
+How to read it
+	1.	Training
+	•	data/intents/ → load_training_data() → IntentClassifier trains on utterances.
+	2.	User input
+	•	Input is vectorized → classifier predicts an intent.
+	3.	Response selection
+	•	Predicted intent → looks up corresponding JSON in data/responses/ → chooses a random response.
+	4.	Fallback
+	•	If the intent is unknown or not found → fallback response is used.
+
+	This is everything in one visual: data → ML → response → user interaction.
