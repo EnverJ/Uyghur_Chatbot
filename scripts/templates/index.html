@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uyghur Chatbot</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        #chatbox {
+            width: 400px;
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+        #message { width: 300px; }
+    </style>
+</head>
+<body>
+    <h2>Uyghur Chatbot -- گەپدان </h2>
+
+    <div id="chatbox"></div>
+
+    <!-- ✅ FORM -->
+    <form id="chat-form">
+        <input type="text" id="message" placeholder="بۇ يەرگە يېزىڭ..." autocomplete="off">
+        <button type="submit">يوللا</button>
+    </form>
+
+    <script>
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("message");
+        const chatbox = document.getElementById("chatbox");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault(); // 🚫 stop page reload
+
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            chatbox.innerHTML += `<div><b>You:</b> ${msg}</div>`;
+
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: msg })
+            });
+
+            const data = await res.json();
+            chatbox.innerHTML += `<div><b>Bot:</b> ${data.reply}</div>`;
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            input.value = "";
+        });
+    </script>
+</body>
+</html>
