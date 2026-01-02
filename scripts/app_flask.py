@@ -16,26 +16,38 @@ RESPONSES = load_responses("../data/responses")
 def index():
     return render_template("index.html")
 
-CONFIDENCE_THRESHOLD = 0.00  # you can tune this
+# Confidence threshold for fallback
+CONFIDENCE_THRESHOLD = 0.0  # tune as needed
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
     message = data.get("message", "").strip()
 
+    if not message:
+        return jsonify({
+            "reply": "⚠️ Please type something.",
+            "intent": None,
+            "confidence": 0
+        })
+
     intent, confidence = classifier.predict_with_confidence(message)
     intent = str(intent)
 
-    # 🔴 HARD STOP FOR UNKNOWN INPUT
-    if confidence < CONFIDENCE_THRESHOLD:
+    # 🔴 Unknown or low-confidence input → fallback
+    if confidence < CONFIDENCE_THRESHOLD or intent not in RESPONSES:
+        # Save input to both userInput.json and backup with timestamp
         save_fallback_input(message)
 
         return jsonify({
-            "reply": random.choice(RESPONSES["fallback"]),
+            "reply": random.choice(RESPONSES.get("fallback", ["I’m sorry, I didn’t understand that."])),
             "intent": "fallback",
-            "confidence": round(confidence, 2)})
-    # ✅ ONLY known, confident inputs reach here
+            "confidence": round(confidence, 2)
+        })
+
+    # ✅ Known, confident input
     return jsonify({
-        "reply": random.choice(RESPONSES.get(intent, RESPONSES["fallback"])),
+        "reply": random.choice(RESPONSES.get(intent, RESPONSES.get("fallback", ["I’m sorry, I didn’t understand that."]))),
         "intent": intent,
         "confidence": round(confidence, 2)
     })

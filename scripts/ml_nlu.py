@@ -5,6 +5,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
 
+# Machine Learning – Natural Language Understanding
 def load_training_data(data_folder=None):
     if data_folder is None:
         base_dir = os.path.dirname(__file__)
@@ -34,17 +35,6 @@ def load_training_data(data_folder=None):
     return training_data
 
 class IntentClassifier:
-    # def __init__(self, training_data):
-    #     texts = [t[0] for t in training_data]
-    #     labels = [t[1] for t in training_data]
-    #
-    #     self.pipeline = Pipeline([
-    #         ("tfidf", TfidfVectorizer(
-    #             ngram_range=(1, 2),
-    #             token_pattern=r"(?u)\b\w+\b"
-    #         )),
-    #         ("clf", LinearSVC())
-    #     ])
     def __init__(self, training_data):
         texts, labels = zip(*training_data)
 
@@ -63,10 +53,6 @@ class IntentClassifier:
         max_score = max(scores[0])
         intent = self.pipeline.predict([text])[0]
         return intent, max_score
-
-        if not texts:
-            raise ValueError("❌ texts list is empty — training data not loaded correctly")
-
         self.pipeline.fit(texts, labels)
 
     def predict(self, text):
