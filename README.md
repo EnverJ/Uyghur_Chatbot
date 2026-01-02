@@ -67,3 +67,13 @@ Uyghur_Chatbot/
   ]
 }
 
+---
+```### 5. `data/responses/` ✅ Required
+- **Purpose:** Stores JSON files containing chatbot responses for each intent.
+ml_nlu.py is the machine learning component of our chatbot. 
+It loads labeled training examples for each intent,
+turns the text into numerical features (using TF‑IDF),
+and trains a classifier (SVM) to recognize user intent.
+When a user sends a message, 
+it predicts the corresponding intent and a confidence score, 
+which the chatbot uses to select an appropriate response.
